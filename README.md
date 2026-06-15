@@ -4,7 +4,11 @@
 
 ## Demo
 
-https://github.com/Razia-H/spiritpulse/blob/main/assets/demo.mp4
+Live demo: https://spiritpulse-production.up.railway.app/dashboard
+
+API docs: https://spiritpulse-production.up.railway.app/docs
+
+Screen recording: https://github.com/Razia-H/spiritpulse/blob/main/assets/demo.mp4
 
 ## Architecture
 
