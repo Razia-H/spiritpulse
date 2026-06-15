@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_posts
+    description: "Cleaned and typed social media posts from raw DLT landing table"
+    columns:
+      - name: post_id
+        tests: [unique, not_null]
+      - name: sentiment_label
+        tests:
+          - accepted_values:
+              values: ["positive", "negative", "neutral"]
+      - name: sentiment_score
+        tests: [not_null]
+
+  - name: stg_brands
+    description: "Cleaned brand master list"
+    columns:
+      - name: brand_id
+        tests: [unique, not_null]
+
+  - name: mart_brand_sentiment
+    description: "Daily aggregated sentiment metrics per brand — primary API source"
+    columns:
+      - name: brand_id
+        tests: [not_null]
+      - name: report_date
+        tests: [not_null]
+      - name: avg_sentiment_score
+        tests: [not_null]
+      - name: sentiment_signal
+        tests:
+          - accepted_values:
+              values: ["bullish", "neutral", "bearish"]
+
+  - name: mart_trending_hashtags
+    description: "Top 20 trending hashtags per day with engagement metrics"
+    columns:
+      - name: hashtag
+        tests: [not_null]
+      - name: report_date
+        tests: [not_null]

@@ -1,0 +1,16 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.dlt/
+transform/spiritpulse_dbt/target/
+transform/spiritpulse_dbt/dbt_packages/
+transform/spiritpulse_dbt/logs/
+*.log
+.DS_Store

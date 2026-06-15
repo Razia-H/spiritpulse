@@ -1,0 +1,34 @@
+version: 2
+
+sources:
+  - name: spiritpulse_raw
+    schema: spiritpulse
+    description: "Raw tables written by DLT ingestion pipeline"
+    tables:
+      - name: social_posts
+        description: "Raw social media posts from the simulator"
+        columns:
+          - name: post_id
+            description: "Unique post identifier (UUID)"
+            tests:
+              - unique
+              - not_null
+          - name: brand_id
+            tests: [not_null]
+          - name: sentiment_label
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ["positive", "negative", "neutral"]
+          - name: sentiment_score
+            tests: [not_null]
+          - name: posted_at
+            tests: [not_null]
+
+      - name: brands
+        description: "Master brand list written by DLT"
+        columns:
+          - name: brand_id
+            tests:
+              - unique
+              - not_null

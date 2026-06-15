@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpiritPulse — Alcohol Brand Analytics</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e8eaf0;
+      --muted: #8b90a0;
+      --accent: #7c6af7;
+      --positive: #34d399;
+      --negative: #f87171;
+      --neutral: #fbbf24;
+    }
+    body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
+    header h1 span { color: var(--accent); }
+    .badge { background: var(--accent); color: white; font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 999px; font-weight: 600; }
+    .status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--positive); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem; }
+    .card .value { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; }
+    .card .sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    @media (max-width: 768px) { .charts { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+    .chart-card h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+    .chart-card canvas { max-height: 260px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
+    td { padding: 0.75rem; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    .signal { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+    .signal.bullish { background: rgba(52,211,153,0.15); color: var(--positive); }
+    .signal.neutral  { background: rgba(251,191,36,0.15);  color: var(--neutral); }
+    .signal.bearish  { background: rgba(248,113,113,0.15); color: var(--negative); }
+    .loading { text-align: center; color: var(--muted); padding: 2rem; }
+    .error { background: rgba(248,113,113,0.1); border: 1px solid var(--negative); border-radius: 8px; padding: 1rem; color: var(--negative); margin-bottom: 1rem; }
+    .full-width { grid-column: 1 / -1; }
+    select { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.8rem; cursor: pointer; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🥃 Spirit<span>Pulse</span></h1>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <div class="status"><div class="dot"></div><span id="status-text">Connecting...</span></div>
+    <span class="badge">LIVE</span>
+  </div>
+</header>
+
+<main>
+  <div id="error-container"></div>
+
+  <!-- KPI cards -->
+  <div class="grid">
+    <div class="card">
+      <h3>Total Posts Analyzed</h3>
+      <div class="value" id="kpi-posts">—</div>
+      <div class="sub">Last 7 days</div>
+    </div>
+    <div class="card">
+      <h3>Brands Tracked</h3>
+      <div class="value" id="kpi-brands">—</div>
+      <div class="sub">Alcohol categories</div>
+    </div>
+    <div class="card">
+      <h3>Avg Sentiment Score</h3>
+      <div class="value" id="kpi-sentiment">—</div>
+      <div class="sub">0.0 negative → 1.0 positive</div>
+    </div>
+    <div class="card">
+      <h3>Top Trending Tag</h3>
+      <div class="value" style="font-size:1.2rem" id="kpi-hashtag">—</div>
+      <div class="sub" id="kpi-hashtag-count">—</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="charts">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h2>Sentiment by Brand</h2>
+      </div>
+      <canvas id="sentimentChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h2>Post Volume by Brand</h2>
+      </div>
+      <canvas id="volumeChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h2>Sentiment Breakdown</h2>
+      </div>
+      <canvas id="breakdownChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h2>Top Hashtags</h2>
+      </div>
+      <canvas id="hashtagChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Brand sentiment table -->
+  <div class="card">
+    <h2 style="font-size:0.9rem;font-weight:600;margin-bottom:1rem;">Brand Sentiment Summary</h2>
+    <div id="table-container"><div class="loading">Loading sentiment data...</div></div>
+  </div>
+</main>
+
+<script>
+  const API = 'http://localhost:8000';
+
+  Chart.defaults.color = '#8b90a0';
+  Chart.defaults.borderColor = '#2a2d3a';
+  Chart.defaults.font.family = 'system-ui, sans-serif';
+
+  const BRAND_COLORS = [
+    '#7c6af7','#34d399','#f87171','#fbbf24','#60a5fa','#f472b6'
+  ];
+
+  async function fetchJSON(path) {
+    const res = await fetch(API + path);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText} — ${path}`);
+    return res.json();
+  }
+
+  function showError(msg) {
+    document.getElementById('error-container').innerHTML =
+      `<div class="error">⚠ ${msg}</div>`;
+  }
+
+  async function loadDashboard() {
+    try {
+      // Health check
+      const health = await fetchJSON('/health');
+      document.getElementById('status-text').textContent =
+        health.status === 'ok' ? 'Connected' : 'Degraded';
+
+      // Load data in parallel
+      const [brands, sentiment, trends] = await Promise.all([
+        fetchJSON('/brands'),
+        fetchJSON('/sentiment?days=7'),
+        fetchJSON('/trends?days=7&limit=10'),
+      ]);
+
+      // Aggregate by brand (latest day per brand)
+      const byBrand = {};
+      for (const row of sentiment) {
+        if (!byBrand[row.brand_id]) byBrand[row.brand_id] = row;
+      }
+      const brandRows = Object.values(byBrand);
+
+      // KPIs
+      const totalPosts = brandRows.reduce((s, r) => s + r.total_posts, 0);
+      const avgSentiment = brandRows.reduce((s, r) => s + r.avg_sentiment_score, 0) / brandRows.length;
+      document.getElementById('kpi-posts').textContent = totalPosts.toLocaleString();
+      document.getElementById('kpi-brands').textContent = brands.length;
+      document.getElementById('kpi-sentiment').textContent = avgSentiment.toFixed(3);
+
+      if (trends.length > 0) {
+        document.getElementById('kpi-hashtag').textContent = trends[0].hashtag;
+        document.getElementById('kpi-hashtag-count').textContent =
+          `${trends[0].mention_count} mentions`;
+      }
+
+      // Chart 1: Avg sentiment score by brand (bar)
+      new Chart(document.getElementById('sentimentChart'), {
+        type: 'bar',
+        data: {
+          labels: brandRows.map(r => r.brand_name),
+          datasets: [{
+            label: 'Avg Sentiment Score',
+            data: brandRows.map(r => r.avg_sentiment_score),
+            backgroundColor: BRAND_COLORS,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { min: 0, max: 1, ticks: { stepSize: 0.2 } }
+          }
+        }
+      });
+
+      // Chart 2: Post volume by brand (horizontal bar)
+      new Chart(document.getElementById('volumeChart'), {
+        type: 'bar',
+        data: {
+          labels: brandRows.map(r => r.brand_name),
+          datasets: [{
+            label: 'Total Posts',
+            data: brandRows.map(r => r.total_posts),
+            backgroundColor: BRAND_COLORS,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: { legend: { display: false } },
+        }
+      });
+
+      // Chart 3: Sentiment breakdown (stacked bar)
+      new Chart(document.getElementById('breakdownChart'), {
+        type: 'bar',
+        data: {
+          labels: brandRows.map(r => r.brand_name),
+          datasets: [
+            {
+              label: 'Positive',
+              data: brandRows.map(r => r.positive_count),
+              backgroundColor: '#34d399',
+              borderRadius: 4,
+            },
+            {
+              label: 'Neutral',
+              data: brandRows.map(r => r.neutral_count),
+              backgroundColor: '#fbbf24',
+            },
+            {
+              label: 'Negative',
+              data: brandRows.map(r => r.negative_count),
+              backgroundColor: '#f87171',
+            },
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: { x: { stacked: true }, y: { stacked: true } },
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+        }
+      });
+
+      // Chart 4: Top hashtags (doughnut)
+      const topHashtags = trends.slice(0, 6);
+      new Chart(document.getElementById('hashtagChart'), {
+        type: 'doughnut',
+        data: {
+          labels: topHashtags.map(t => t.hashtag),
+          datasets: [{
+            data: topHashtags.map(t => t.mention_count),
+            backgroundColor: BRAND_COLORS,
+            borderWidth: 2,
+            borderColor: '#1a1d27',
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+          }
+        }
+      });
+
+      // Table
+      const tableHtml = `
+        <table>
+          <thead>
+            <tr>
+              <th>Brand</th>
+              <th>Category</th>
+              <th>Posts</th>
+              <th>Avg Score</th>
+              <th>Positive %</th>
+              <th>Engagement</th>
+              <th>Signal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${brandRows.map(r => `
+              <tr>
+                <td><strong>${r.brand_name}</strong></td>
+                <td style="color:var(--muted)">${r.brand_category}</td>
+                <td>${r.total_posts.toLocaleString()}</td>
+                <td>${r.avg_sentiment_score.toFixed(3)}</td>
+                <td>${r.positive_pct}%</td>
+                <td>${r.total_engagement.toLocaleString()}</td>
+                <td><span class="signal ${r.sentiment_signal}">${r.sentiment_signal}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+      document.getElementById('table-container').innerHTML = tableHtml;
+
+    } catch (err) {
+      showError(`Failed to load data: ${err.message}. Make sure the API is running at ${API}`);
+      document.getElementById('status-text').textContent = 'Disconnected';
+      document.querySelector('.dot').style.background = 'var(--negative)';
+    }
+  }
+
+  loadDashboard();
+  setInterval(loadDashboard, 30000); // Refresh every 30s
+</script>
+</body>
+</html>

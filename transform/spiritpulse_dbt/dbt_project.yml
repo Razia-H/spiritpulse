@@ -1,0 +1,24 @@
+name: spiritpulse_dbt
+version: "1.0.0"
+config-version: 2
+
+profile: spiritpulse
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  spiritpulse_dbt:
+    staging:
+      +schema: spiritpulse
+      +materialized: view
+    marts:
+      +schema: spiritpulse
+      +materialized: table
