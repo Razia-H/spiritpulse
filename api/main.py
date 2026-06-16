@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import os
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.database import check_connection
 from api.models import HealthOut
-from api.routers import brands, sentiment, trends
+from api.routers import brands, sentiment, trends, search
 
 load_dotenv()
 
@@ -51,6 +51,7 @@ app.add_middleware(
 app.include_router(brands.router)
 app.include_router(sentiment.router)
 app.include_router(trends.router)
+app.include_router(search.router)
 
 app.mount("/static", StaticFiles(directory="dashboard"), name="static")
 
@@ -88,3 +89,4 @@ async def global_exception_handler(request, exc):
         status_code=500,
         content={"detail": "Internal server error", "type": type(exc).__name__},
     )
+
