@@ -44,3 +44,14 @@ Jack Daniel's - Modelo - Guinness - Hendrick's Gin - Don Julio - Whispering Ange
 ## Author
 
 Razia H - https://github.com/Razia-H
+
+
+## Semantic Search
+
+Powered by Pinecone + Gemini embeddings (3072 dimensions).
+
+```bash
+https://spiritpulse-production.up.railway.app/search?q=customers+complaining+about+price
+https://spiritpulse-production.up.railway.app/search?q=best+whiskey+experience
+https://spiritpulse-production.up.railway.app/search?q=disappointed+with+quality
+```
